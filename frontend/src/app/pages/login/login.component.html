@@ -1,0 +1,36 @@
+<div class="container">
+
+  <h1>Login</h1>
+
+  <form
+    [formGroup]="loginForm"
+    (ngSubmit)="onSubmit()"
+  >
+
+    <input
+      type="email"
+      placeholder="Email"
+      formControlName="email"
+    />
+
+    <input
+      type="password"
+      placeholder="Password"
+      formControlName="password"
+    />
+
+    <button type="submit">
+
+      {{ loading ? 'Loading...' : 'Login' }}
+
+    </button>
+
+  </form>
+
+  <p *ngIf="errorMessage">
+
+    {{ errorMessage }}
+
+  </p>
+
+</div>
