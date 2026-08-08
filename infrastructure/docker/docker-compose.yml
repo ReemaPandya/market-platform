@@ -73,6 +73,19 @@ services:
       - redis
       - redpanda
 
+  market-service:
+    build:
+      context: ../../services/market-service
+      dockerfile: Dockerfile
+    container_name: market-market-service
+    restart: always
+    ports:
+      - "8083:8082"
+    env_file:
+      - ../../services/market-service/.env
+    depends_on:
+      - redis
+
   gateway:
     image: nginx:latest
     container_name: market-gateway
