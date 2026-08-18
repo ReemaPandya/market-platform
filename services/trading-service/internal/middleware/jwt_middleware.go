@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"auth-service/internal/metrics"
 	"fmt"
 	"net/http"
 	"os"
@@ -41,9 +40,18 @@ func JWTMiddleware() gin.HandlerFunc {
 			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
 
-		if err != nil || !token.Valid {
+		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "invalid token",
+				"error":   "invalid token",
+				"details": err.Error(),
+			})
+			c.Abort()
+			return
+		}
+
+		if !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "token is not valid",
 			})
 			c.Abort()
 			return
@@ -52,7 +60,7 @@ func JWTMiddleware() gin.HandlerFunc {
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "invalid token claims",
+				"error": "invalid claims",
 			})
 			c.Abort()
 			return
@@ -68,19 +76,6 @@ func JWTMiddleware() gin.HandlerFunc {
 		}
 
 		c.Set("email", email)
-
-		c.Next()
-	}
-}
-
-func MetricsMiddleware() gin.HandlerFunc {
-
-	return func(c *gin.Context) {
-
-		metrics.HttpRequests.WithLabelValues(
-			c.FullPath(),
-			c.Request.Method,
-		).Inc()
 
 		c.Next()
 	}

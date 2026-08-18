@@ -1,19 +1,5 @@
-version: '3.9'
 
 services:
-
-  postgres:
-    image: postgres:16
-    container_name: market-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: market_platform
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7
@@ -51,7 +37,7 @@ services:
     container_name: market-kafka-ui
     restart: always
     ports:
-      - "8082:8080"
+      - "8084:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: redpanda:9092
@@ -69,9 +55,7 @@ services:
     env_file:
       - ../../services/auth-service/.env
     depends_on:
-      - postgres
       - redis
-      - redpanda
 
   market-service:
     build:
@@ -80,11 +64,28 @@ services:
     container_name: market-market-service
     restart: always
     ports:
-      - "8083:8082"
+      - "8083:8083"
     env_file:
       - ../../services/market-service/.env
+    environment:
+      REDIS_ADDR: redis:6379
     depends_on:
       - redis
+
+  trading-service:
+    build:
+      context: ../../services/trading-service
+      dockerfile: Dockerfile
+    container_name: market-trading-service
+    restart: always
+    ports:
+      - "8082:8082"
+    env_file:
+      - ../../services/trading-service/.env
+    environment:
+      MARKET_SERVICE_URL: http://market-service:8083
+    depends_on:
+      - market-service
 
   gateway:
     image: nginx:latest
@@ -93,9 +94,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ../../gateway/nginx.conf:/etc/nginx/nginx.conf
+      - ../../gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - auth-service
-
-volumes:
-  postgres_data:
+      - trading-service
+      - market-service

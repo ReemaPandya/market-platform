@@ -18,7 +18,7 @@ export class AuthService {
   signup(data: any): Observable<any> {
 
     return this.http.post(
-      `${this.apiUrl}/signup`,
+      `${this.apiUrl}/auth/signup`,
       data
     );
   }
@@ -26,7 +26,7 @@ export class AuthService {
   login(data: any): Observable<any> {
 
     return this.http.post(
-      `${this.apiUrl}/login`,
+      `${this.apiUrl}/auth/login`,
       data
     );
   }

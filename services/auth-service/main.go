@@ -20,7 +20,7 @@ import (
 func main() {
 
 	// Load environment variables
-	godotenv.Load()
+	godotenv.Overload()
 
 	// Initialize logger
 	logger.InitLogger()

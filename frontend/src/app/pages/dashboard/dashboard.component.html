@@ -1,7 +1,274 @@
-<h1>Dashboard</h1>
+<div class="dashboard">
+  <header class="dashboard-header">
+    <div>
+      <h1>Market Platform</h1>
+      <p>Paper Trading Dashboard</p>
+    </div>
 
-<button (click)="logout()">
+    <button class="logout-button" (click)="logout()">
+      Logout
+    </button>
+  </header>
 
-  Logout
+  <div *ngIf="loading" class="status-message">
+    Loading portfolio...
+  </div>
 
-</button>
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+
+    <section class="summary-grid">
+      <div class="summary-card">
+        <span>Total Invested</span>
+        <strong>
+          ₹{{ totalInvested() | number:'1.2-2' }}
+        </strong>
+      </div>
+
+      <div class="summary-card">
+        <span>Current Value</span>
+        <strong>
+          ₹{{ totalCurrentValue() | number:'1.2-2' }}
+        </strong>
+      </div>
+
+      <div class="summary-card">
+        <span>Unrealized P&amp;L</span>
+
+        <strong
+          [class.profit]="totalPnL() >= 0"
+          [class.loss]="totalPnL() < 0"
+        >
+          ₹{{ totalPnL() | number:'1.2-2' }}
+        </strong>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+  <div class="section-header">
+    <div>
+      <h2>Place Order</h2>
+      <p>Paper trading using current NSE market prices.</p>
+    </div>
+  </div>
+
+  <div class="order-grid">
+
+    <div class="order-field">
+      <label for="symbol">Symbol</label>
+
+      <input
+        id="symbol"
+        type="text"
+        [(ngModel)]="symbol"
+        (blur)="refreshQuoteAndStream()"
+        placeholder="INFY"
+      />
+    </div>
+
+    <div class="order-field">
+      <label for="quantity">Quantity</label>
+
+      <input
+        id="quantity"
+        type="number"
+        min="1"
+        [(ngModel)]="quantity"
+      />
+    </div>
+
+    <div class="order-field">
+      <label for="side">Side</label>
+
+      <select
+        id="side"
+        [(ngModel)]="side"
+      >
+        <option value="BUY">BUY</option>
+        <option value="SELL">SELL</option>
+      </select>
+    </div>
+
+    <div class="order-field quote-box">
+      <label>Current Price</label>
+
+      <strong *ngIf="quote">
+        ₹{{ quote.ltp | number:'1.2-2' }}
+      </strong>
+
+      <span *ngIf="!quote">
+        Quote unavailable
+      </span>
+
+      <small *ngIf="quote">
+        {{ quote.symbol }} · {{ quote.exchange }} · {{ quote.source }}
+      </small>
+    </div>
+
+  </div>
+
+  <div class="order-actions">
+    <button
+      type="button"
+      class="quote-button"
+      (click)="refreshQuoteAndStream()"
+    >
+      Refresh Quote
+    </button>
+
+    <button
+      type="button"
+      [class.buy-button]="side === 'BUY'"
+      [class.sell-button]="side === 'SELL'"
+      [disabled]="submittingOrder"
+      (click)="submitOrder()"
+    >
+      {{ submittingOrder ? 'Submitting...' : side + ' ' + symbol }}
+    </button>
+  </div>
+
+  <div
+    *ngIf="orderMessage"
+    class="order-success"
+  >
+    {{ orderMessage }}
+  </div>
+
+  <div
+    *ngIf="orderError"
+    class="order-error"
+  >
+    {{ orderError }}
+  </div>
+</section>
+
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2>Portfolio</h2>
+
+        <button (click)="loadDashboard()">
+          Refresh
+        </button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Exchange</th>
+              <th>Qty</th>
+              <th>Avg Price</th>
+              <th>Current Price</th>
+              <th>Invested</th>
+              <th>Current Value</th>
+              <th>P&amp;L</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let position of positions">
+              <td>
+                <strong>{{ position.symbol }}</strong>
+              </td>
+
+              <td>{{ position.exchange }}</td>
+
+              <td>{{ position.quantity }}</td>
+
+              <td>
+                ₹{{ position.average_price | number:'1.2-2' }}
+              </td>
+
+              <td>
+                ₹{{ position.current_price | number:'1.2-2' }}
+              </td>
+
+              <td>
+                ₹{{ position.invested_value | number:'1.2-2' }}
+              </td>
+
+              <td>
+                ₹{{ position.current_value | number:'1.2-2' }}
+              </td>
+
+              <td
+                [class.profit]="position.unrealized_pnl >= 0"
+                [class.loss]="position.unrealized_pnl < 0"
+              >
+                ₹{{ position.unrealized_pnl | number:'1.2-2' }}
+              </td>
+            </tr>
+
+            <tr *ngIf="positions.length === 0">
+              <td colspan="8" class="empty-state">
+                No positions yet.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <h2>Order History</h2>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Symbol</th>
+              <th>Side</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let order of orders">
+              <td>#{{ order.id }}</td>
+
+              <td>
+                <strong>{{ order.symbol }}</strong>
+              </td>
+
+              <td>
+                <span
+                  [class.buy]="order.side === 'BUY'"
+                  [class.sell]="order.side === 'SELL'"
+                >
+                  {{ order.side }}
+                </span>
+              </td>
+
+              <td>{{ order.quantity }}</td>
+
+              <td>
+                ₹{{ order.executed_price | number:'1.2-2' }}
+              </td>
+
+              <td>{{ order.status }}</td>
+
+              <td>
+                {{ order.created_at | date:'medium' }}
+              </td>
+            </tr>
+
+            <tr *ngIf="orders.length === 0">
+              <td colspan="7" class="empty-state">
+                No orders yet.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </ng-container>
+</div>

@@ -1,4 +1,3 @@
 export const environment = {
-
-  apiUrl: 'http://localhost/auth',
+  apiUrl: 'http://localhost:8080',
 };
